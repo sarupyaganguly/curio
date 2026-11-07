@@ -200,5 +200,45 @@ body.reading #view{padding-bottom:calc(40px + env(safe-area-inset-bottom))}
 .chk .box .ico{width:15px;height:15px;stroke-width:2.6;opacity:0}.chk.on .box .ico{opacity:1}
 #toast{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom));transform:translate(-50%,20px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:99px;font-size:14px;font-weight:500;opacity:0;pointer-events:none;transition:.25s;z-index:60;white-space:nowrap}
 #toast.show{opacity:1;transform:translate(-50%,0)}
+/* ===== card lists (single column on phone) ===== */
+.list .card{width:auto;margin:0 20px 12px}
+.list .empty{grid-column:1/-1}
+
+/* ===== iPad / large screens: use the width, keep reading measure comfortable ===== */
+@media (min-width:768px){
+  #app{max-width:940px}
+  #view{padding-top:calc(env(safe-area-inset-top) + 28px)}
+  .head,.hdr-row,.sect,.group-title{padding-left:32px;padding-right:32px}
+  .pills{padding-left:32px;padding-right:32px}
+  .logo{font-size:52px}.title-lg{font-size:40px}
+  .list{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:0 32px}
+  .list .card{margin:0}
+  .hero{width:calc(100% - 64px);margin:0 32px;padding:34px}
+  .hero h2{font-size:42px;max-width:75%}.hero p{font-size:17px;max-width:70%}
+  .hero .rings{width:240px;height:240px;right:-60px;top:-60px}
+  .grid{grid-template-columns:repeat(3,1fr);gap:16px;padding:0 32px}
+  .search,.seg,.surprise,.cardlist,.steps,.end{margin-left:32px;margin-right:32px}
+  .search{width:auto}.surprise{width:calc(100% - 64px)}
+  .stat-row{padding:0 32px}.seg{max-width:520px}
+  .end{padding:32px}
+  #tabbar{max-width:640px;border-radius:22px 22px 0 0;border:1px solid var(--line);border-bottom:0}
+  /* reader: centred column */
+  .rnav,.rd,.bottom-actions{max-width:720px;margin-left:auto;margin-right:auto}
+  .rnav{padding-left:28px;padding-right:28px}
+  .bottom-actions{padding:0 26px;margin-top:40px}
+  .rd{padding-left:32px;padding-right:32px}
+  .rd h1{font-size:48px}.rd .hook{font-size:22px}
+  .body p{font-size:21px}
+  .rd .list{grid-template-columns:1fr;padding:0}
+  .rd .rsec{margin-left:0!important;margin-right:0!important}
+  .rd .rsec h3{padding:0!important}
+  .rd .list .card{margin:0}
+}
+@media (min-width:1100px){
+  #app{max-width:1180px}
+  .list{grid-template-columns:repeat(3,1fr)}
+  .grid{grid-template-columns:repeat(4,1fr)}
+  .hero h2{max-width:60%}
+}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media (min-width:600px){#app{border-left:1px solid var(--line);border-right:1px solid var(--line)}}

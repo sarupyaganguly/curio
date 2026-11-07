@@ -1,6 +1,6 @@
 // Curio service worker: caches the whole app so it works fully offline.
 // Bump VERSION whenever any app file or the content changes so phones pick up the update.
-const VERSION = 'curio-v1';
+const VERSION = 'curio-v2';
 const FILES = [
   './', 'index.html', 'styles.css', 'fonts.css', 'manifest.webmanifest',
   'js/app.js', 'data/ideas.js',

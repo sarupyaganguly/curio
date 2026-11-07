@@ -127,6 +127,7 @@ function card(i) {
   return `<a class="card" href="#/idea/${i.id}" style="--h:${s.hue}"><div class="txt"><div class="eyebrow">${esc(subjectsOf(i))}</div><h4>${esc(i.title)}</h4><p>${esc(i.hook)}</p>
     <div class="foot"><span class="meta">${mins(i)} min read</span>${doneMark(i.id)}<span style="margin-left:auto"></span>${bm(i.id)}</div></div><div class="thumb">${I(s.icon)}</div></a>`;
 }
+const cards = a => `<div class="list">${a.map(card).join('')}</div>`;
 const emptyState = (icon, title, text, extra = '') => `<div class="empty">${I(icon)}<h4>${esc(title)}</h4><p>${esc(text)}</p>${extra}</div>`;
 const backBar = label => `<button class="backlink" data-action="back">${I('back')}${esc(label)}</button>`;
 
@@ -138,7 +139,7 @@ views.discover = () => {
   const d = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   return `<div class="head"><div class="date">${d}</div><div class="logo">Curio</div><div class="tag">A little curiosity, every day.</div></div>
   <div class="sect"><h3>Today’s ${set.length}</h3><span class="meta">${done} of ${set.length} read</span></div>
-  ${hero(set[0])}<div style="height:14px"></div>${set.slice(1).map(card).join('')}
+  ${hero(set[0])}<div style="height:14px"></div>${cards(set.slice(1))}
   <div class="end"><h3>${done === set.length ? 'You’re done for today' : 'That’s today’s set'}</h3><p>Curio is finite by design. Read one idea, then go and live your day.</p>
   <div class="row-btns"><button class="btn" data-action="surprise">${I('shuffle')}Surprise me</button><a class="btn ghost" href="#/explore">Explore subjects</a></div></div>`;
 };
@@ -156,14 +157,14 @@ function searchResults(q) {
   const r = search(q);
   if (!q.trim()) return exploreHome();
   if (!r.length) return emptyState('search', 'Nothing found', `No ideas match “${q.trim()}”. Try a simpler word, or browse a subject.`);
-  return `<div class="sect"><h3>${r.length} result${r.length === 1 ? '' : 's'}</h3></div>${r.map(card).join('')}`;
+  return `<div class="sect"><h3>${r.length} result${r.length === 1 ? '' : 's'}</h3></div>${cards(r)}`;
 }
 
 views.subject = ([id]) => {
   const s = subj[id]; if (!s) return notFound();
   const list = IDEAS.filter(i => i.subjects.includes(id));
   return `${backBar('Explore')}<div class="head" style="margin-top:6px"><div class="thumb" style="--h:${s.hue};width:52px;height:52px;margin-bottom:14px">${I(s.icon)}</div><div class="title-lg">${esc(s.name)}</div><div class="tag">${esc(s.blurb)}</div></div>
-  <div style="height:18px"></div>${list.map(card).join('')}`;
+  <div style="height:18px"></div>${cards(list)}`;
 };
 
 views.learn = () => {
@@ -192,7 +193,7 @@ function savedList() { return Object.keys(S.saved).map(id => byId[id]).filter(Bo
 function savedTab() {
   const list = savedList();
   if (!list.length) return emptyState('bookmark', 'Nothing saved yet', 'Tap the bookmark on any idea to keep it here, even offline.', '<a class="btn" href="#/discover">Find something to read</a>');
-  return `<label class="search">${I('search')}<input id="sq" type="search" placeholder="Search saved ideas and notes" autocomplete="off" aria-label="Search saved"></label><div style="height:16px"></div><div id="savedBody">${list.map(card).join('')}</div>`;
+  return `<label class="search">${I('search')}<input id="sq" type="search" placeholder="Search saved ideas and notes" autocomplete="off" aria-label="Search saved"></label><div style="height:16px"></div><div id="savedBody" class="list">${list.map(card).join('')}</div>`;
 }
 function collectionsTab() {
   if (!S.collections.length) return emptyState('folder', 'No collections yet', 'Group saved ideas your own way, such as “To investigate” or “Psychology”.', '<button class="btn" data-action="newCollection">Create a collection</button>');
@@ -205,7 +206,7 @@ views.collection = ([id]) => {
   return `${backBar('Collections')}<div class="hdr-row" style="margin-top:6px"><div class="title-lg">${esc(c.name)}</div>
     <div style="display:flex;gap:8px"><button class="rbtn" data-action="renameCollection" data-id="${c.id}" aria-label="Rename collection">${I('edit')}</button><button class="rbtn" data-action="deleteCollection" data-id="${c.id}" aria-label="Delete collection">${I('trash')}</button></div></div>
   <div class="head"><div class="meta">${list.length} idea${list.length === 1 ? '' : 's'}. Deleting a collection never deletes the ideas themselves.</div></div><div style="height:16px"></div>
-  ${list.length ? list.map(card).join('') : emptyState('bookmark', 'This collection is empty', 'Open any saved idea and choose “Add to collection”.')}`;
+  ${list.length ? cards(list) : emptyState('bookmark', 'This collection is empty', 'Open any saved idea and choose “Add to collection”.')}`;
 };
 
 views.idea = ([id], q) => {
@@ -226,7 +227,7 @@ views.idea = ([id], q) => {
     ${i.sources.length ? `<div class="rsec"><h3>Sources</h3>${i.sources.map(x => `<div class="src"><b>${esc(x.title)}</b><span>${esc(x.author)}, ${esc(x.year)}${x.note ? ' · ' + esc(x.note) : ''}</span>${x.verified ? '' : '<br><span class="unv">Citation not yet verified</span>'}</div>`).join('')}</div>`
       : `<div class="rsec"><h3>Sources</h3><div class="src"><span>No sources attached yet. This is demo copy and should be checked before being relied on.</span></div></div>`}
     <div class="rsec"><h3>Your note</h3><textarea class="note" id="note" data-id="${id}" placeholder="An observation, a question, something to look up…" aria-label="Personal note">${esc(rec?.note || '')}</textarea><div class="meta" style="margin-top:6px">Writing a note saves the idea to My Stashes.</div></div>
-    ${related.length ? `<div class="rsec" style="margin-left:-26px;margin-right:-26px"><h3 style="padding:0 26px">Related ideas</h3>${related.map(card).join('')}</div>` : ''}
+    ${related.length ? `<div class="rsec" style="margin-left:-26px;margin-right:-26px"><h3 style="padding:0 26px">Related ideas</h3>${cards(related)}</div>` : ''}
   </article>
   <div class="bottom-actions"><button class="btn ghost" data-action="collect" data-id="${id}">${I('folder')}Add to collection</button>
     ${nextL ? `<a class="btn" href="#/idea/${nextL.id}?learn=1">Next idea ${I('chev')}</a>` : learn ? `<a class="btn" href="#/learn">Finish session</a>` : ''}</div>
