@@ -1,4 +1,5 @@
 import { SUBJECTS, IDEAS } from '../data/ideas.js';
+import { EXPLAINERS } from './explainers.js';
 
 /* ---------- helpers ---------- */
 const $ = (s, r = document) => r.querySelector(s);
@@ -92,6 +93,39 @@ function search(q) {
   }).filter(Boolean).sort((a, b) => b.sc - a.sc).map(x => x.i);
 }
 
+/* ---------- generative cover art (unique per idea, seeded, no images needed) ---------- */
+function hashStr(s) { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+function coverArt(key, { w = 400, h = 240 } = {}) {
+  const r = rng(hashStr(key)), style = Math.floor(r() * 4), f = n => n.toFixed(1); let g = '';
+  if (style === 0) { // orbits
+    const cx = w * (.35 + r() * .5), cy = h * (.2 + r() * .6), n = 4 + Math.floor(r() * 3);
+    for (let k = 0; k < n; k++) g += `<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(h * (.12 + k * .17 + r() * .05))}" fill="none" stroke="currentColor" stroke-width="${f(1 + r() * 1.5)}" opacity="${f(.25 + .5 * r())}"/>`;
+    g += `<circle cx="${f(cx + (r() - .5) * h * .6)}" cy="${f(cy + (r() - .5) * h * .6)}" r="${f(h * .055)}" fill="var(--accent)"/>`;
+  } else if (style === 1) { // waves
+    const n = 9;
+    for (let k = 0; k < n; k++) {
+      const y = h * (.08 + .84 * k / (n - 1)), amp = h * (.03 + r() * .1), ph = r() * 6.28, fr = 1.2 + r() * 2; let d = `M0 ${f(y)}`;
+      for (let x = 0; x <= w; x += 16) d += ` L${x} ${f(y + Math.sin(x / w * fr * 6.28 + ph) * amp)}`;
+      g += `<path d="${d}" fill="none" stroke="currentColor" stroke-width="1.4" opacity="${f(.15 + .6 * (k / n))}"/>`;
+    }
+    g += `<circle cx="${f(w * (.2 + r() * .6))}" cy="${f(h * (.2 + r() * .6))}" r="${f(h * .05)}" fill="var(--accent)"/>`;
+  } else if (style === 2) { // dot field
+    const px = r() * w, py = r() * h, cols = 15, rows = 9;
+    for (let a = 0; a < cols; a++) for (let b = 0; b < rows; b++) {
+      const x = (a + .5) * w / cols, y = (b + .5) * h / rows, d = Math.hypot(x - px, y - py) / w, rad = 1 + 5.2 * Math.max(0, 1 - d * 1.7);
+      g += `<circle cx="${f(x)}" cy="${f(y)}" r="${f(rad)}" fill="currentColor" opacity="${f(.25 + .65 * Math.max(0, 1 - d * 1.7))}"/>`;
+    }
+    g += `<circle cx="${f(px)}" cy="${f(py)}" r="${f(h * .04)}" fill="var(--accent)"/>`;
+  } else { // facets
+    for (let k = 0; k < 8; k++) {
+      const p = Array.from({ length: 3 }, () => `${f(r() * w)},${f(r() * h)}`).join(' ');
+      g += `<polygon points="${p}" fill="currentColor" fill-opacity="${f(.05 + r() * .22)}" stroke="currentColor" stroke-opacity=".5" stroke-width="1"/>`;
+    }
+    g += `<line x1="${f(r() * w)}" y1="0" x2="${f(r() * w)}" y2="${h}" stroke="var(--accent)" stroke-width="1.5" opacity=".8"/>`;
+  }
+  return `<svg class="art" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${g}</svg>`;
+}
+
 /* ---------- ui bits ---------- */
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 1800); }
 function sheet(html) {
@@ -118,14 +152,14 @@ const bm = (id, cls = '') => `<button class="bm ${cls} ${isSaved(id) ? 'on' : ''
 const doneMark = id => S.read[id] ? `<span class="done-dot">${I('check')}Read</span>` : '';
 function hero(i, learn) {
   const s = primary(i);
-  return `<a class="hero" href="#/idea/${i.id}${learn ? '?learn=1' : ''}" style="--h:${s.hue}"><div class="eyebrow">${esc(s.name)}</div>${RINGS}
+  return `<a class="hero" href="#/idea/${i.id}${learn ? '?learn=1' : ''}" style="--h:${s.hue}"><div class="artwrap">${coverArt(i.id, { w: 420, h: 300 })}</div><div class="eyebrow">${esc(s.name)}</div>
     <h2>${esc(i.title)}</h2><p>${esc(i.hook)}</p>
     <div class="row"><span>${mins(i)} min read ${S.read[i.id] ? '· ✓ Read' : ''}</span>${bm(i.id)}</div></a>`;
 }
 function card(i) {
   const s = primary(i);
   return `<a class="card" href="#/idea/${i.id}" style="--h:${s.hue}"><div class="txt"><div class="eyebrow">${esc(subjectsOf(i))}</div><h4>${esc(i.title)}</h4><p>${esc(i.hook)}</p>
-    <div class="foot"><span class="meta">${mins(i)} min read</span>${doneMark(i.id)}<span style="margin-left:auto"></span>${bm(i.id)}</div></div><div class="thumb">${I(s.icon)}</div></a>`;
+    <div class="foot"><span class="meta">${mins(i)} min read</span>${doneMark(i.id)}<span style="margin-left:auto"></span>${bm(i.id)}</div></div><div class="thumb art-t">${coverArt(i.id, { w: 120, h: 120 })}</div></a>`;
 }
 const cards = a => `<div class="list">${a.map(card).join('')}</div>`;
 const emptyState = (icon, title, text, extra = '') => `<div class="empty">${I(icon)}<h4>${esc(title)}</h4><p>${esc(text)}</p>${extra}</div>`;
@@ -149,6 +183,7 @@ views.explore = () => `<div class="hdr-row"><div class="title-lg">Explore</div><
   <div id="exploreBody">${exploreHome()}</div>`;
 function exploreHome() {
   return `<button class="surprise" data-action="surprise">${I('shuffle')}<div><b>Surprise me</b><span>Open a random idea</span></div></button>
+  <a class="surprise" href="#/map" style="text-decoration:none;color:inherit"><svg class="ico" viewBox="0 0 24 24"><circle cx="6" cy="7" r="1.6"/><circle cx="17" cy="5" r="1.6"/><circle cx="13" cy="13" r="1.6"/><circle cx="5" cy="18" r="1.6"/><circle cx="19" cy="18" r="1.6"/><path d="M6 7l7 6M17 5l-4 8M13 13l-8 5M13 13l6 5"/></svg><div><b>Constellation</b><span>See how ideas connect across subjects</span></div></a>
   <div class="sect"><h3>Subjects</h3><span class="meta">${SUBJECTS.length}</span></div>
   <div class="grid">${SUBJECTS.map(s => { const n = IDEAS.filter(i => i.subjects.includes(s.id)).length;
     return `<a class="sub-tile" href="#/subject/${s.id}" style="--h:${s.hue}"><div class="thumb">${I(s.icon)}</div><b>${esc(s.name)}</b><span>${n} idea${n === 1 ? '' : 's'}</span></a>`; }).join('')}</div>`;
@@ -159,6 +194,26 @@ function searchResults(q) {
   if (!r.length) return emptyState('search', 'Nothing found', `No ideas match “${q.trim()}”. Try a simpler word, or browse a subject.`);
   return `<div class="sect"><h3>${r.length} result${r.length === 1 ? '' : 's'}</h3></div>${cards(r)}`;
 }
+
+views.map = () => {
+  const W = 360, H = 540, pos = {};
+  SUBJECTS.forEach((s, k) => { const a = -Math.PI / 2 + k * 2 * Math.PI / SUBJECTS.length; pos[s.id] = { x: W / 2 + Math.cos(a) * W * .37, y: H / 2 + Math.sin(a) * H * .39 }; });
+  const nodes = IDEAS.map(i => {
+    const pts = i.subjects.map(t => pos[t]), cx = pts.reduce((a, p) => a + p.x, 0) / pts.length, cy = pts.reduce((a, p) => a + p.y, 0) / pts.length;
+    const r = rng(hashStr(i.id)), ang = r() * 6.283, dist = (i.subjects.length > 1 ? 10 : 24) + r() * 26;
+    const toward = 0.18; // pull singles slightly inward so the ring doesn't hug the labels
+    return { i, x: cx + Math.cos(ang) * dist + (W / 2 - cx) * toward, y: cy + Math.sin(ang) * dist + (H / 2 - cy) * toward };
+  });
+  const edges = nodes.map(n => n.i.subjects.map(t => `<line class="edge" x1="${n.x.toFixed(1)}" y1="${n.y.toFixed(1)}" x2="${pos[t].x.toFixed(1)}" y2="${pos[t].y.toFixed(1)}" stroke="hsl(${subj[t].hue} 60% 62%)"/>`).join('')).join('');
+  const anchors = SUBJECTS.map(s => `<a href="#/subject/${s.id}" aria-label="${esc(s.name)}"><circle cx="${pos[s.id].x.toFixed(1)}" cy="${pos[s.id].y.toFixed(1)}" r="13" fill="hsl(${s.hue} 38% 34%)" stroke="hsl(${s.hue} 60% 62%)" stroke-width="1.5"/><text class="anchor-t" x="${pos[s.id].x.toFixed(1)}" y="${(pos[s.id].y + (pos[s.id].y > H / 2 ? 28 : -20)).toFixed(1)}">${esc(s.short)}</text></a>`).join('');
+  const dots = nodes.map(n => { const rd = !!S.read[n.i.id], sv = isSaved(n.i.id);
+    return `<a href="#/idea/${n.i.id}" aria-label="${esc(n.i.title)}">${sv ? `<circle class="halo" cx="${n.x.toFixed(1)}" cy="${n.y.toFixed(1)}" r="10"/>` : ''}<circle class="${rd ? 'n-read' : 'n-unread'}" cx="${n.x.toFixed(1)}" cy="${n.y.toFixed(1)}" r="5.5"/><circle cx="${n.x.toFixed(1)}" cy="${n.y.toFixed(1)}" r="14" fill="transparent"/></a>`; }).join('');
+  const touched = SUBJECTS.filter(s => IDEAS.some(i => S.read[i.id] && i.subjects.includes(s.id))).length;
+  return `${backBar('Explore')}<div class="head" style="margin-top:6px"><div class="title-lg">Constellation</div><div class="tag">Ideas that belong to two subjects sit between them.</div></div>
+  <svg class="sky-map" viewBox="0 0 ${W} ${H}" role="group" aria-label="Map of ideas by subject">${edges}${anchors}${dots}</svg>
+  <div class="legend"><span><i style="background:var(--accent)"></i>Read</span><span><i style="background:var(--faint)"></i>Not yet</span><span><i style="border:1.5px solid var(--accent)"></i>Saved</span></div>
+  <div class="head" style="margin-top:14px;text-align:center"><div class="meta">${touched} of ${SUBJECTS.length} subjects explored · ${Object.keys(S.read).length} of ${IDEAS.length} ideas read. Tap any star to open it.</div></div>`;
+};
 
 views.subject = ([id]) => {
   const s = subj[id]; if (!s) return notFound();
@@ -216,13 +271,16 @@ views.idea = ([id], q) => {
   const set = todaySet(), nextL = learn ? set.find(x => !S.read[x.id] && x.id !== id) : null;
   return `<div class="read-prog" id="prog"></div>
   <div class="rnav"><button class="rbtn" data-action="back" aria-label="Back">${I('back')}</button><div class="grp">
+    <button class="rbtn" data-action="textSheet" aria-label="Text size" style="font-family:var(--serif);font-size:17px;font-weight:600">Aa</button>
     <button class="rbtn" data-action="share" data-id="${id}" aria-label="Share">${I('share')}</button>
     <button class="rbtn ${isSaved(id) ? 'on' : ''}" data-action="save" data-id="${id}" aria-label="${isSaved(id) ? 'Remove from saved' : 'Save idea'}" aria-pressed="${isSaved(id)}">${I('bookmark')}</button></div></div>
+  <div class="cover" style="--h:${s.hue}">${coverArt(id, { w: 440, h: 200 })}</div>
   <article class="rd" style="--h:${s.hue}"><div class="eyebrow">${esc(i.subjects.map(t => subj[t].name).join(' · '))}</div><h1>${esc(i.title)}</h1><div class="hook">${esc(i.hook)}</div>
     <div class="by"><b>${mins(i)} min read</b><span class="dot"></span><span>Original explanation</span><span class="dot"></span><span class="tagdemo" title="Demo copy, not editorially verified">Demo</span></div>
     <div class="body">${i.body.map(p => `<p>${esc(p)}</p>`).join('')}</div>
     <div class="callout"><span class="eyebrow">Why it matters</span><p>${esc(i.why)}</p></div>
     <div class="callout caveat"><span class="eyebrow">Worth knowing</span><p>${esc(i.caveat)}</p></div>
+    ${i.explainer && EXPLAINERS[i.explainer] ? `<div class="rsec"><h3>Try it</h3><div id="explainer">${EXPLAINERS[i.explainer].html()}</div></div>` : ''}
     ${i.quiz ? `<div class="rsec"><h3>Check yourself</h3>${quizHtml(i)}</div>` : ''}
     ${i.sources.length ? `<div class="rsec"><h3>Sources</h3>${i.sources.map(x => `<div class="src"><b>${esc(x.title)}</b><span>${esc(x.author)}, ${esc(x.year)}${x.note ? ' · ' + esc(x.note) : ''}</span>${x.verified ? '' : '<br><span class="unv">Citation not yet verified</span>'}</div>`).join('')}</div>`
       : `<div class="rsec"><h3>Sources</h3><div class="src"><span>No sources attached yet. This is demo copy and should be checked before being relied on.</span></div></div>`}
@@ -262,7 +320,7 @@ const notFound = () => `${backBar('Back')}${emptyState('search', 'Not found', 'T
 
 /* ---------- router ---------- */
 const TABS = [['discover', 'Discover', 'compass'], ['explore', 'Explore', 'grid'], ['learn', 'Learn', 'bulb'], ['stashes', 'Stashes', 'bookmark'], ['profile', 'Profile', 'user']];
-const tabOf = { discover: 'discover', explore: 'explore', subject: 'explore', learn: 'learn', stashes: 'stashes', collection: 'stashes', profile: 'profile' };
+const tabOf = { discover: 'discover', explore: 'explore', subject: 'explore', map: 'explore', learn: 'learn', stashes: 'stashes', collection: 'stashes', profile: 'profile' };
 const scrolls = {}; let io;
 function renderTabs(active) {
   $('#tabbar').innerHTML = TABS.map(([k, l, ic]) => `<a class="tab ${k === active ? 'on' : ''}" href="#/${k}" ${k === active ? 'aria-current="page"' : ''}>${I(ic)}<span>${l}</span></a>`).join('');
@@ -286,6 +344,7 @@ function render() {
 }
 function afterIdea(id) {
   if (!S.opened[id]) { S.opened[id] = Date.now(); persist(); }
+  const ex = EXPLAINERS[byId[id].explainer]; if (ex) ex.mount($('#explainer'));
   const note = $('#note'); let t;
   note.oninput = () => { clearTimeout(t); t = setTimeout(() => { if (!S.saved[id]) S.saved[id] = { savedAt: Date.now(), note: '' }; S.saved[id].note = note.value; persist(); refreshSaveButtons(id); }, 400); };
   io = new IntersectionObserver(e => { if (e[0].isIntersecting) markRead(id); }, { rootMargin: '0px 0px 0px 0px' });
@@ -307,14 +366,24 @@ function importFile(file) {
   r.onload = () => { try { const j = JSON.parse(r.result); if (!j || typeof j.saved !== 'object' || !Array.isArray(j.collections)) throw 0; S = { ...defaults(), ...j, prefs: { ...defaults().prefs, ...(j.prefs || {}) } }; persist(); applyTheme(); render(); toast('Backup restored'); } catch { toast('That file isn’t a Curio backup'); } };
   r.readAsText(file);
 }
+const TEXT_SCALE = [.9, 1, 1.12, 1.26];
 function applyTheme() {
   document.documentElement.dataset.theme = S.prefs.theme;
+  document.documentElement.style.setProperty('--rs', TEXT_SCALE[S.prefs.textSize ?? 1] || 1);
   const dark = S.prefs.theme === 'dark' || (S.prefs.theme === 'system' && !matchMedia('(prefers-color-scheme: light)').matches);
   $('meta[name=theme-color]').content = dark ? '#0d1220' : '#f5f0e6';
 }
 const actions = {
   back() { history.length > 1 ? history.back() : go('#/discover'); },
   closeSheet,
+  textSheet() {
+    const cur = S.prefs.textSize ?? 1;
+    sheet(`<h3>Reading text size</h3><p class="sub">Applies to every idea.</p>
+      <div class="seg" style="margin:0 0 14px">${['Small', 'Default', 'Large', 'Extra'].map((l, n) => `<button class="${cur === n ? 'on' : ''}" data-action="textSize" data-v="${n}" aria-pressed="${cur === n}" style="font-family:var(--serif);font-size:${14 + n * 3}px">${l}</button>`).join('')}</div>
+      <p class="serif" style="font-size:calc(19.5px*var(--rs,1));line-height:1.6;margin-bottom:16px">When a government changes its rules, people and firms do not stand still.</p>
+      <div class="row-btns"><button class="btn" data-action="closeSheet">Done</button></div>`);
+  },
+  textSize(el) { S.prefs.textSize = +el.dataset.v; persist(); applyTheme(); document.querySelectorAll('[data-action=textSize]').forEach(b => { const on = +b.dataset.v === S.prefs.textSize; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); }); },
   save(el) { const id = el.dataset.id; const was = isSaved(id); toggleSave(id); refreshSaveButtons(id); toast(was ? 'Removed from saved' : 'Saved to My Stashes'); if (location.hash.startsWith('#/stashes') || location.hash.startsWith('#/collection')) { if (was) render(); } },
   surprise() { const pool = IDEAS.filter(i => !S.read[i.id]); const p = pool.length ? pool : IDEAS; go('#/idea/' + p[Math.floor(Math.random() * p.length)].id); },
   async share(el) { const i = byId[el.dataset.id]; const text = `${i.title}: ${i.hook}`; try { if (navigator.share) await navigator.share({ title: i.title, text }); else { await navigator.clipboard.writeText(text); toast('Copied to clipboard'); } } catch { } },

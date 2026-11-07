@@ -2,6 +2,8 @@
 // Citations were written from memory and have NOT been verified against the originals (verified:false).
 // Never present these as editorially verified until each source is checked.
 
+import { BATCH2 } from './ideas-econ2.js';
+
 export const SUBJECTS = [
   { id: 'econ',     name: 'Economics & finance',     short: 'Economics',  icon: 'chart',   hue: 42,  blurb: 'Money, markets and the incentives behind them.' },
   { id: 'history',  name: 'History & geopolitics',   short: 'History',    icon: 'column',  hue: 18,  blurb: 'How the past shaped the map and the rules.' },
@@ -19,7 +21,7 @@ const src = (title, author, year, note = '') => ({ title, author, year, note, ve
 
 export const IDEAS = [
   {
-    id: 'lucas-critique', subjects: ['econ', 'politics'], title: 'The Lucas Critique',
+    id: 'lucas-critique', explainer: 'lucas', subjects: ['econ', 'politics'], title: 'The Lucas Critique',
     hook: 'Why economic policy can change the very behaviour that policymakers are trying to predict.',
     body: [
       'When a government or central bank changes its rules, people and firms do not stand still. They adjust their expectations and their decisions, and that can quietly break the statistical relationships policymakers were relying on.',
@@ -214,7 +216,7 @@ export const IDEAS = [
     sources: [src('The Nature of the Firm', 'Ronald H. Coase', 1937, 'Economica')]
   },
   {
-    id: 'dark-sky', subjects: ['nature'], title: 'Why the night sky is dark',
+    id: 'dark-sky', explainer: 'olbers', subjects: ['nature'], title: 'Why the night sky is dark',
     hook: 'If stars fill an infinite universe, every line of sight should end on one. Why isn\'t the sky blazing?',
     body: [
       'This puzzle is called Olbers\' paradox. In an infinite, unchanging universe full of stars, any direction you look would eventually hit a star\'s surface, and the whole sky should glow as bright as a star.',
@@ -252,7 +254,7 @@ export const IDEAS = [
     quiz: { q: 'What does Arrow\'s theorem say about ranked voting with 3 or more options?', options: ['A perfect system exists', 'Only majority voting works', 'No system meets all his fairness conditions without being a dictatorship', 'It always produces ties'], answer: 2, explain: 'Any ranked system must violate at least one of his reasonable-seeming conditions.' }
   },
   {
-    id: 'simpson', subjects: ['maths', 'science'], title: 'Simpson\'s paradox',
+    id: 'simpson', explainer: 'simpson', subjects: ['maths', 'science'], title: 'Simpson\'s paradox',
     hook: 'A trend can appear in every group, then reverse when the groups are combined.',
     body: [
       'Imagine two treatments. Treatment A works better than B for mild cases, and also better for severe cases. Yet when you pool all patients, B appears to do better overall.',
@@ -275,4 +277,4 @@ export const IDEAS = [
     caveat: 'Later work found adaptation is incomplete: some events, such as long-term unemployment or bereavement, can leave lasting effects. The original study was also small.',
     sources: [src('Lottery winners and accident victims: is happiness relative?', 'Brickman, Coates & Janoff-Bulman', 1978, 'Journal of Personality and Social Psychology 36(8)')]
   }
-];
+].concat(BATCH2);
